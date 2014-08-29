@@ -14,6 +14,9 @@ import pylab as pl
 import matplotlib.colors as colors
 import random
 from matplotlib import gridspec
+from matplotlib.patches import Rectangle
+import math
+import matplotlib.lines as mlines
 
 def usage():
     test="name"
@@ -102,28 +105,16 @@ def set_ticks_XY(ax, xlen, ylen, xlab, ylab):
 
     return ax
 
-def set_ticks_XY_Right(ax, xlen, ylen, xlab, ylab):
+
+def set_ticks_XY_Left_LOD(ax, xmin, xmax, ymin, ymax):
     fig = plt.gcf()
-    #fig.set_size_inches(8, 11)
 
     # turn off the frame
     ax.set_frame_on(False)
-    ax.yaxis.set_ticks_position('right')
-
-    # put the major ticks at the middle of each cell
-    ax.set_yticks(np.arange(xlen) + 0.5, minor=False)
-    ax.set_xticks(np.arange(ylen) + 0.5, minor=False)
-
-    # want a more natural, table-like display
-    ax.invert_yaxis()
-    ax.xaxis.tick_top()
+    ax.yaxis.set_ticks_position('left')
 
     # Set the labels
-    ax.set_xticklabels(xlab, minor=False, fontsize=8)
-    ax.set_yticklabels(ylab, minor=False)
-
-    # rotate the
-    plt.xticks(rotation=40)
+    ax.set_xticklabels([], minor=False)
 
     ax.grid(False)
 
@@ -133,10 +124,68 @@ def set_ticks_XY_Right(ax, xlen, ylen, xlab, ylab):
     for t in ax.xaxis.get_major_ticks():
         t.tick1On = False
         t.tick2On = False
-    for t in ax.yaxis.get_major_ticks():
+
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    
+    #reset y tick location and labels 
+    yloc =  map(int, ax.yaxis.get_majorticklocs())
+    ax.set_yticks(yloc, minor=False)
+    ax.set_yticklabels(yloc, minor=False)
+   
+    ymax1 = max(yloc)
+
+    #draw x and y axix line  
+    ly = mlines.Line2D([xmin, xmin], [ymin, ymax1], color='black')
+    #lx = mlines.Line2D([xmin, xmax], [ymin, ymin], color='black')
+    ax.add_line(ly)
+    #ax.add_line(lx)
+
+    ax.set_ylabel('LOD')
+    ax.yaxis.set_label_coords(-0.03, 0.5)
+
+    return ax
+
+
+
+def set_ticks_XY_Left(ax, xmin, xmax, ymin, ymax):
+    fig = plt.gcf()
+
+    # turn off the frame
+    ax.set_frame_on(False)
+    ax.yaxis.set_ticks_position('left')
+
+    # Set the labels
+    ax.set_xticklabels([], minor=False)
+
+    ax.grid(False)
+
+    # Turn off all the ticks
+    ax = plt.gca()
+
+    for t in ax.xaxis.get_major_ticks():
         t.tick1On = False
         t.tick2On = False
 
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    
+    #reset y tick location and labels 
+    yloc =  map(int, ax.yaxis.get_majorticklocs())
+    ax.set_yticks(yloc, minor=False)
+    ax.set_yticklabels(yloc, minor=False)
+   
+    ymax1 = max(yloc)
+
+    #draw x and y axis line  
+    ly = mlines.Line2D([xmin, xmin], [ymin, ymax1], color='black')
+    lx = mlines.Line2D([xmin, xmax], [ymin, ymin], color='black')
+    ax.add_line(ly)
+    ax.add_line(lx)
+
+    #set y axis annotation
+    ax.set_ylabel(r'$-log_{10}(P)$')
+    ax.yaxis.set_label_coords(-0.03, 0.5)
     return ax
 
 
@@ -261,9 +310,77 @@ def subfiles(infile, lodfile, gwas_prefix):
                 gwas_trait = unit[6]
                 prefix = '%s' %(unit[3])
                 #LODfile 
-                lodfile, start, end = sublodfile(lodfile, chrs, start, end, qtl_trait, prefix)
+                lodfiles, start, end = sublodfile(lodfile, chrs, start, end, qtl_trait, prefix)
                 #GWASfile
-                gwasfiles= subgwasfile(gwas_prefix, chrs, start, end, gwas_trait, prefix)
+                gwasfiles = subgwasfile(gwas_prefix, chrs, start, end, gwas_trait, prefix)
+                #Plot
+                plot_region(lodfiles, gwasfiles, start, end, prefix)
+
+def plot_region(lodfiles, gwasfiles, start, end, prefix):
+    nrow = len(lodfiles) + len(gwasfiles)
+    xmin = 0
+    xmax = end - start +1 
+    # Create a figure.
+    figsize=(12,6)
+    fig = plt.figure(figsize=figsize)
+    plt.subplots_adjust(bottom=0.2)
+  
+    # split plot into 4 rows X 1 cols. gs[1, 0] is 2th row and 1th column
+    # gs[0:, 0]  is all rows of 1th column
+    print 'number of row: %s' %(nrow)
+    gs = gridspec.GridSpec(int(nrow), 1, hspace=0.2)
+
+    #plot qtl lod curve
+    #Position        Bin_start       Bin_end Chr     LOD
+    #343751  290088  397414  Chr3    3.09188403328
+    rank = 0
+    for i in range(len(lodfiles)):
+        print i
+        lod_data = pd.read_table(lodfiles[i])
+        positions= map(lambda n:n-start, lod_data['Position'])
+        lod_score= lod_data['LOD']
+        ax0 = fig.add_subplot(gs[i])
+        ax0.plot(positions, lod_score, marker='.', color='lightblue', lw=1)
+        rank += 1
+        ymin = int(min(lod_score)*0.95)
+        ymax = max(lod_score)*1.02
+        plt.ylim(ymin, ymax)
+        plt.xlim(xmin, xmax)
+        # set axis
+        ax0 = set_ticks_XY_Left_LOD(ax0, xmin, xmax, ymin, ymax)
+
+        
+        #recombination block
+        for j in range(len(lod_data['Bin_start'])):   
+            bin_s = lod_data['Bin_start'][j] - start
+            bin_e = lod_data['Bin_end'][j] - start
+            width= bin_e - bin_s + 1
+            height= 0.5
+            rx = bin_s
+            ry = ymin
+            #print j, rx, ry, width, height
+            color = 'grey' if j % 2 == 0 else 'black'
+            ax0.add_patch(Rectangle((rx, ry), width, height, color=color))
+
+    #plot gwas curve
+    #CHR     BP      SNP     P
+    #Chr3    307962  id3000025       0.391076770445
+    #Chr3    309403  id3000030       0.131840540423
+    for i in range(len(gwasfiles)):
+        gwas_data = pd.read_table(gwasfiles[i])
+        positions = map(lambda n:n-start, gwas_data['BP'])
+        #pvalue    = map(math.log10, gwas_data['P'])
+        pvalue    = map(lambda n:-n, map(math.log10, gwas_data['P']))
+        ymax = max(pvalue) * 1.1
+        print '%s' %(i+rank) 
+        ax0 = fig.add_subplot(gs[i+rank])
+        #ax0.plot(positions, pvalue, 'bo')
+        ax0.scatter(positions, pvalue, c='lightskyblue', edgecolors='none')
+        #plt.xlim(xmin, xmax)
+        #plt.ylim(0, ymax)
+        ax0 = set_ticks_XY_Left(ax0, xmin, xmax, 0, ymax) 
+    #save file
+    fig.savefig('%s.pdf' %(prefix), bbox_inches='tight')
 
 def sublodfile(lodfile, chrs, start, end, qtl_trait, prefix):
     outfile = prefix + '.LOD.subfile'
@@ -282,7 +399,7 @@ def sublodfile(lodfile, chrs, start, end, qtl_trait, prefix):
     position = sorted(position, key=int)
     start = position[0]
     end   = position[-1]
-    return outfile, start, end
+    return [outfile], start, end
 
 def subgwasfile(gwas_prefix, chrs, start, end, gwas_trait, prefix):
     gwasfiles = []
