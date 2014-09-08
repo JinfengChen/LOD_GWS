@@ -468,10 +468,10 @@ def plot_region(lodfiles, gwasfiles, genefiles, start, end, prefix):
             gstart = int(gene_data[3][r]) - start
             gend   = int(gene_data[4][r]) - start
             gmidpoint = gstart + (gend - gstart)/2
-            plt.axvline(x=gmidpoint, ymin=0, ymax=3.5, clip_on=False, linestyle='dashed', color='black')
+            plt.axvline(x=gmidpoint, ymin=0, ymax=4.6, clip_on=False, linestyle='dashed', color='black')
             m = rx.search(gene_data[8][r])
             name = m.groups(0)[0] if m else 'None'
-            plt.text(gmidpoint*0.98, 70, name, style='italic', horizontalalignment='left', verticalalignment='bottom', rotation=50)
+            plt.text(gmidpoint*0.98, 10, name, style='italic', horizontalalignment='left', verticalalignment='bottom', rotation=50)
             #for n in range(len(axs)):
                 #axs[n].axvline(x=gmidpoint, ymin=-2, ymax=2, clip_on=False, color='black') 
     #save file
