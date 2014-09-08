@@ -368,15 +368,16 @@ Chr1    76852   id1000007       0.665625290523823
 
 '''
 def subfiles(infile, lodfile, genefile, gwas_prefix):
-    flank = 1000000
+    flank_l = 1000000
+    flank_r = 2000000
     with open (infile, 'r') as filehd:
         for line in filehd:
             line = line.rstrip()
             if line.startswith('Chr'): 
                 unit = re.split(r'\t',line)
                 chrs = unit[0]
-                start= int(unit[1]) - flank if int(unit[1]) - flank > 0 else 0
-                end  = int(unit[2]) + flank
+                start= int(unit[1]) - flank_l if int(unit[1]) - flank_l > 0 else 0
+                end  = int(unit[2]) + flank_r
                 qtl_trait = unit[5]
                 gwas_trait = unit[6]
                 prefix = '%s' %(unit[3])
@@ -468,10 +469,10 @@ def plot_region(lodfiles, gwasfiles, genefiles, start, end, prefix):
             gstart = int(gene_data[3][r]) - start
             gend   = int(gene_data[4][r]) - start
             gmidpoint = gstart + (gend - gstart)/2
-            plt.axvline(x=gmidpoint, ymin=0, ymax=3.5, clip_on=False, linestyle='dashed', color='black')
+            plt.axvline(x=gmidpoint, ymin=0, ymax=4.7, clip_on=False, linestyle='dashed', color='black')
             m = rx.search(gene_data[8][r])
             name = m.groups(0)[0] if m else 'None'
-            plt.text(gmidpoint*0.98, 90, name, style='italic', horizontalalignment='left', verticalalignment='bottom', rotation=50)
+            plt.text(gmidpoint*0.98, 21, name, style='italic', horizontalalignment='left', verticalalignment='bottom', rotation=50)
             #for n in range(len(axs)):
                 #axs[n].axvline(x=gmidpoint, ymin=-2, ymax=2, clip_on=False, color='black') 
     #save file

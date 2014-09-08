@@ -427,7 +427,7 @@ def plot_region(lodfiles, gwasfiles, genefiles, start, end, prefix):
             bin_s = lod_data['Bin_start'][j] - start
             bin_e = lod_data['Bin_end'][j] - start
             width= bin_e - bin_s + 1
-            height= 0.5
+            height= (ymax-ymin)*0.1
             rx = bin_s
             ry = ymin
             #print j, rx, ry, width, height
@@ -471,7 +471,7 @@ def plot_region(lodfiles, gwasfiles, genefiles, start, end, prefix):
             plt.axvline(x=gmidpoint, ymin=0, ymax=4.6, clip_on=False, linestyle='dashed', color='black')
             m = rx.search(gene_data[8][r])
             name = m.groups(0)[0] if m else 'None'
-            plt.text(gmidpoint*0.98, 10, name, style='italic', horizontalalignment='left', verticalalignment='bottom', rotation=50)
+            plt.text(gmidpoint*0.98, 14, name, style='italic', horizontalalignment='left', verticalalignment='bottom', rotation=50)
             #for n in range(len(axs)):
                 #axs[n].axvline(x=gmidpoint, ymin=-2, ymax=2, clip_on=False, color='black') 
     #save file

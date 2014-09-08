@@ -427,7 +427,7 @@ def plot_region(lodfiles, gwasfiles, genefiles, start, end, prefix):
             bin_s = lod_data['Bin_start'][j] - start
             bin_e = lod_data['Bin_end'][j] - start
             width= bin_e - bin_s + 1
-            height= 0.5
+            height= (ymax-ymin)*0.1
             rx = bin_s
             ry = ymin
             #print j, rx, ry, width, height

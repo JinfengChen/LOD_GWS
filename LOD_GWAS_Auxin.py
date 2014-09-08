@@ -368,15 +368,16 @@ Chr1    76852   id1000007       0.665625290523823
 
 '''
 def subfiles(infile, lodfile, genefile, gwas_prefix):
-    flank = 1000000
+    flank_l = 1000000
+    flank_r = 3000000
     with open (infile, 'r') as filehd:
         for line in filehd:
             line = line.rstrip()
             if line.startswith('Chr'): 
                 unit = re.split(r'\t',line)
                 chrs = unit[0]
-                start= int(unit[1]) - flank if int(unit[1]) - flank > 0 else 0
-                end  = int(unit[2]) + flank
+                start= int(unit[1]) - flank_l if int(unit[1]) - flank_l > 0 else 0
+                end  = int(unit[2]) + flank_r
                 qtl_trait = unit[5]
                 gwas_trait = unit[6]
                 prefix = '%s' %(unit[3])
@@ -417,7 +418,7 @@ def plot_region(lodfiles, gwasfiles, genefiles, start, end, prefix):
         ax0.plot(positions, lod_score, marker='.', color='lightblue', lw=1)
         rank += 1
         ymin = int(min(lod_score)*0.95)
-        ymax = max(lod_score)*1.02
+        ymax = max(lod_score)*1.2
         plt.ylim(ymin, ymax)
         plt.xlim(xmin, xmax)
         # set axis
@@ -468,16 +469,16 @@ def plot_region(lodfiles, gwasfiles, genefiles, start, end, prefix):
             gstart = int(gene_data[3][r]) - start
             gend   = int(gene_data[4][r]) - start
             gmidpoint = gstart + (gend - gstart)/2
-            plt.axvline(x=gmidpoint, ymin=0, ymax=3.5, clip_on=False, linestyle='dashed', color='black')
+            plt.axvline(x=gmidpoint, ymin=0, ymax=6, clip_on=False, linestyle='dashed', color='black')
             m = rx.search(gene_data[8][r])
             name = m.groups(0)[0] if m else 'None'
-            plt.text(gmidpoint*0.98, 90, name, style='italic', horizontalalignment='left', verticalalignment='bottom', rotation=50)
+            plt.text(gmidpoint*0.98, 18, name, style='italic', horizontalalignment='left', verticalalignment='bottom', rotation=50)
             #for n in range(len(axs)):
                 #axs[n].axvline(x=gmidpoint, ymin=-2, ymax=2, clip_on=False, color='black') 
     #save file
     fig.savefig('%s.pdf' %(prefix), bbox_inches='tight')
 
-def sublodfile(lodfile, chrs, start, end, qtl_trait, prefix):
+def sublodfile_0(lodfile, chrs, start, end, qtl_trait, prefix):
     outfile = prefix + '.LOD.subfile' 
     ofile = open(outfile, 'w')
     print >> ofile, 'Position\tBin_start\tBin_end\tChr\tLOD'
@@ -495,6 +496,35 @@ def sublodfile(lodfile, chrs, start, end, qtl_trait, prefix):
     start = position[0]
     end   = position[-1]
     return [outfile], start, end
+
+def sublodfile(lodfile, chrs, start, end, qtl_trait, prefix):
+    #outfile = prefix + '.LOD.subfile' 
+    #ofile = open(outfile, 'w')
+    #print >> ofile, 'Position\tBin_start\tBin_end\tChr\tLOD'
+    lod_data = pd.read_table(lodfile)
+    position = []
+
+    qtlfiles= []
+    traits = re.split(r',', qtl_trait)
+    for t in traits:
+        temp = t.replace(r'/','') 
+        outfile = prefix + '.' + temp + '.LOD.subfile'
+        qtlfiles.append(outfile)
+        ofile = open(outfile, 'w')
+        print >> ofile, 'Position\tBin_start\tBin_end\tChr\tLOD'
+        for i in range(len(lod_data['Position'])):
+            #print lod_data['chr'][i], lod_data['Position'][i], chrs, start, end
+            if lod_data['chr'][i] == chrs and int(lod_data['Position'][i]) > start and int(lod_data['Position'][i]) < end:
+                line = '%s\t%s\t%s\t%s\t%s' %(lod_data['Position'][i], lod_data['Bin_start'][i], lod_data['Bin_end'][i], lod_data['chr'][i], lod_data[t][i])
+                position.append(lod_data['Bin_start'][i])
+                position.append(lod_data['Bin_end'][i])
+                print >> ofile, line
+        ofile.close()
+    position = sorted(position, key=int)
+    start = position[0]
+    end   = position[-1]
+    return qtlfiles, start, end
+
 
 def subgwasfile(gwas_prefix, chrs, start, end, gwas_trait, prefix):
     gwasfiles = []
